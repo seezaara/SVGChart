@@ -14,7 +14,7 @@
 - 🎭 Shadow DOM isolation
 - ✨ Clip-path area fills
 - ⚡ Responsive (ResizeObserver)
-- 🪶 Lightweight
+- 🪶 Lightweight (6.6kb)
 
 ## Installation
 
