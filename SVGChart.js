@@ -1,71 +1,109 @@
-!function () { 
+!function () {
     const svg_offse_top = 50
     const svg_offse_height = 100
-    var styles = '.chartp{--offset:6px;--line:rgba(0, 0, 0, 0.1);--bakcground-value:#333143;--color-value:#fff;--pointer:rgb(128, 136, 255)}.chartp{padding-top:50px;padding-bottom:20px;overflow:hidden;position:relative;width:100%;height:100%;display:flex;flex-direction:row-reverse;box-sizing:border-box}.main_chart{flex:1;position:relative;padding-inline-start:10px;height:calc(100% - 3em)}.chartp .svg_container{margin-top:-' + svg_offse_top + 'px;position:absolute;width:100%;height:calc(100% - var(--offset) + ' + svg_offse_height + 'px)}.svg_container>div>div{width: 100%;height: 100%;position: absolute;}.chartp svg{position:absolute;}.chart{width:100%;height:100%;background-image:linear-gradient(to top,var(--line) 2px,transparent 2px);background-size:100% calc(33.33333% - var(--offset)/ 3);border-top:4px solid transparent;background-position:left top;box-sizing:border-box;display:flex}.chart>div{position:relative;display:flex;width:100%;align-items:flex-end;justify-content:center;padding-top:var(--offset)}.chart>div>span{width:2px;display:block;bottom:0;pointer-events:none;padding-bottom:var(--offset)}.chart>div>span>span{z-index:1;position:absolute;left:50%;transform:translate(-50%,-100%);margin-top:-15px;text-align:center;content:attr(val);white-space:nowrap;padding:5px 7px;background-color:var(--bakcground-value);border-radius:5px;color:var(--color-value)}.chart>div>span>span::before{position:absolute;content:"";width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bakcground-value);left:50%;top:100%;transform:translate(-50%,-1px)}.chart>div>span::before{position:absolute;left:50%;transform:translate(-50%,-50%);padding-top:10px;content:"";border-radius:100%;padding:5px;background:var(--pointer)}.chart>div::before{position:absolute;left:50%;transform:translateX(-50%);top:100%;padding-top:10px;text-align:center;content:attr(data-title);display:none;height:1em;padding:8px 20px}.chart>div::after{position:absolute;left:50%;transform:translateX(-50%);top:100%;width:.15em;height:6px;content:"";display:none;background:var(--line)}.chart:hover+div+.chart_dashitem,.chart:hover>div::after{display:none!important}.chart>div:hover::after,.chart>div:hover::before{display:block!important;z-index:10}.chart_dashitem{position:relative;height:calc(100% - 2em);top:-.5em;padding-bottom:var(--offset);display:flex;flex-direction:column-reverse;text-align:end;justify-content:space-between;box-sizing:border-box}'
+    var styles = '.chartp{--offset-x:6px;--offset-y:40px;--line:rgba(0, 0, 0, 0.1);--bakcground-value:#333143;--color-value:#fff;--pointer:rgb(128, 136, 255)}.chartp{padding-top:50px;padding-bottom:20px;overflow:hidden;position:relative;width:100%;height:100%;display:flex;flex-direction:row-reverse;box-sizing:border-box;gap:10px}.main_chart{flex:1;position:relative;height:calc(100% - 3em)}.chartp .svg_container{margin-top:-' + svg_offse_top + 'px;position:absolute;width:100%;height:calc(100% - var(--offset-x) + ' + svg_offse_height + 'px)}.svg_container>div>div{width: 100%;height: 100%;position: absolute;}.chartp svg{position:absolute;}.chart{padding-inline-end:var(--offset-y);width:100%;height:100%;background-image:linear-gradient(to top,var(--line) 2px,transparent 2px);background-size:100% calc(33.33333% - var(--offset-x)/ 3);border-top:4px solid transparent;background-position:left top;box-sizing:border-box;display:flex}.chart>div{position:relative;display:flex;width:100%;align-items:flex-end;justify-content:center;margin-top:var(--offset-x)}.chart>div>span{position:absolute;width:2px;display:block;bottom:0;pointer-events:none;padding-bottom:var(--offset-x)}.chart>div>span>span{z-index:1;position:absolute;left:50%;transform:translate(-50%,-100%);margin-top:-15px;text-align:center;content:attr(val);white-space:nowrap;padding:5px 7px;background-color:var(--bakcground-value);border-radius:5px;color:var(--color-value)}.chart>div>span>span::before{position:absolute;content:"";width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bakcground-value);left:50%;top:100%;transform:translate(-50%,-1px)}.chart>div>span::before{position:absolute;left:50%;transform:translate(-50%,-50%);padding-top:10px;content:"";border-radius:100%;padding:5px;background:var(--pointer)}.chart>div::before{position:absolute;left:50%;transform:translateX(-50%);top:100%;padding-top:10px;text-align:center;content:attr(data-title);display:none;height:1em;z-index:10}.chart>div::after{position:absolute;left:50%;transform:translateX(-50%);top:100%;width:.15em;height:6px;content:"";display:none;background:var(--line)}.chart:hover+div+.chart_dashitem,.chart:hover>div::after{display:none!important}.chart>div:hover::after,.chart>div:hover::before{display:block!important;}.chart_dashitem{position:relative;height:calc(100% - 2em);top:-.5em;padding-bottom:var(--offset-x);display:flex;flex-direction:column-reverse;text-align:end;justify-content:space-between;box-sizing:border-box}'
 
-    // ==================================================  line
-    
+    // ==================================================  line 
+    function clamp(v, min, max) {
+        return v < min ? min : v > max ? max : v;
+    }
+
     function svgPath(list, cp = "", max, command = 0, yOffset = 0) {
-        const call = command && command != 0 ? bezierCommand : lineCommand;
+        if (!list || list.length < 2) return "";
 
-        var d = list.reduce(function (acc, point, i, a) {
-            const adjustedPoint = [point[0], point[1] + yOffset];
-            return i === 0
-                ? 'M ' + cp + adjustedPoint[0] + ',' + adjustedPoint[1]
-                : acc + ' ' + call(adjustedPoint, max, command, i, a.map(p => [p[0], p[1] + yOffset]));
-        }, '');
+        const pts = list.map(p => [p[0], p[1] + yOffset]);
+        const start = cp ? cp + " " : "";
+
+        // ------------------------------ straight line
+        if (!command) {
+            let d = "M " + start + pts[0][0] + "," + pts[0][1];
+            for (let i = 1; i < pts.length; i++) {
+                d += " L " + pts[i][0] + " " + pts[i][1];
+            }
+            return d;
+        }
+
+        const smooth = clamp(Number(command) || 0.18, 0, 1);
+        const n = pts.length;
+
+        if (n === 2) {
+            return "M " + start + pts[0][0] + "," + pts[0][1] +
+                " L " + pts[1][0] + " " + pts[1][1];
+        }
+
+        // ------------------------------ monotone tangents
+        const xs = new Array(n);
+        const ys = new Array(n);
+        const dx = new Array(n - 1);
+        const slope = new Array(n - 1);
+        const m = new Array(n);
+
+        for (let i = 0; i < n; i++) {
+            xs[i] = pts[i][0];
+            ys[i] = pts[i][1];
+        }
+
+        for (let i = 0; i < n - 1; i++) {
+            dx[i] = xs[i + 1] - xs[i] || 1;
+            slope[i] = (ys[i + 1] - ys[i]) / dx[i];
+        }
+
+        m[0] = slope[0];
+        m[n - 1] = slope[n - 2];
+
+        for (let i = 1; i < n - 1; i++) {
+            m[i] = (slope[i - 1] + slope[i]) / 2;
+        }
+
+        for (let i = 0; i < n - 1; i++) {
+            if (Math.abs(slope[i]) < 1e-12) {
+                m[i] = 0;
+                m[i + 1] = 0;
+                continue;
+            }
+
+            const a = m[i] / slope[i];
+            const b = m[i + 1] / slope[i];
+            const s = a * a + b * b;
+
+            if (s > 9) {
+                const t = 3 / Math.sqrt(s);
+                m[i] = t * a * slope[i];
+                m[i + 1] = t * b * slope[i];
+            }
+        }
+
+        for (let i = 0; i < n; i++) {
+            m[i] *= smooth;
+        }
+
+        // ------------------------------ cubic bezier through points
+        let d = "M " + start + xs[0] + "," + ys[0];
+
+        for (let i = 0; i < n - 1; i++) {
+            const h = xs[i + 1] - xs[i] || 1;
+
+            const c1x = xs[i] + h / 3;
+            const c1y = ys[i] + (m[i] * h / 3);
+
+            const c2x = xs[i + 1] - h / 3;
+            const c2y = ys[i + 1] - (m[i + 1] * h / 3);
+
+            d += " C " +
+                c1x + " " + c1y + ", " +
+                c2x + " " + c2y + ", " +
+                xs[i + 1] + " " + ys[i + 1];
+        }
+
         return d;
     }
 
 
-    function lineCommand(point) {
-        return 'L ' + point[0] + ' ' + point[1];
-    };
-
-
-    //=============================================== curve line
-
-    function controlPoint(smoothing = .2, max, current, previous, next, reverse) {
-        var p = previous || current;
-        var n = next || current;
-        // The smoothing ratio 
-        // Properties of the opposed-line
-        var o = line(p, n);
-        // If is end-control-point, add PI to the angle to go backward
-        var angle = o.angle + (reverse ? Math.PI : 0);
-        var length = o.length * .1 * smoothing;
-        // The control point position is relative to the current point
-        var x = current[0] + Math.cos(angle) * length;
-        var y = current[1] + Math.sin(angle) * length;
-        if (max > y) {
-            return [x, y];
-        } else {
-            return [current[0], current[1]];
-        }
-    };
-
-
-    function line(pointA, pointB) {
-        var lengthX = pointB[0] - pointA[0];
-        var lengthY = pointB[1] - pointA[1];
-        return {
-            length: Math.sqrt(Math.pow(lengthX, 2) + Math.pow(lengthY, 2)),
-            angle: Math.atan2(lengthY, lengthX)
-        };
-    };
-    function bezierCommand(point, max, smoothing, i, a) {
-        // start control point
-        var cps = controlPoint(smoothing, max, a[i - 1], a[i - 2], point);
-        // end control point
-        var cpe = controlPoint(smoothing, max, point, a[i - 1], a[i + 1], true);
-        return "C " + cps[0] + "," + cps[1] + " " + cpe[0] + "," + cpe[1] + " " + point[0] + "," + point[1];
-    };
-
-    //=============================================== chartlist
-
+    //=============================================== chartlist  
     function convert_list_to_svg_point(svg, main_list, max, min) {
+        const svg_right_pad = parseInt(getComputedStyle(svg).getPropertyValue('--offset-y'));
         var bound = svg.getBoundingClientRect();
-        var offset = (bound.width - 10) / main_list.length;
+        var offset = (bound.width - svg_right_pad) / main_list.length;
         var list = [];
 
         // extend ends
@@ -81,10 +119,10 @@
             // invert for SVG Y (0 = top)
             var y = bound.height - (normalized * (bound.height - 5 - svg_offse_height)) - svg_offse_height + svg_offse_top;
             var x = i * offset - (offset / 2);
-
             list.push([x, y]);
-        }
-
+        } 
+        list[0][0] = 0;
+        list[list.length - 1][0] = bound.width
         // remove extra ends
         main_list.splice(0, 1);
         main_list.splice(main_list.length - 1, 1);
@@ -213,7 +251,7 @@
         }).observe(element.children[0]);
 
         function add(option) {
-            var ind = refresh_save.length 
+            var ind = refresh_save.length
             if (option.list && option.list.length == head.length) {
                 const cssindex = ind + 1
                 // ================================================ styles
