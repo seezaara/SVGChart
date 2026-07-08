@@ -4,6 +4,10 @@
     var styles = '.chartp{--offset-x:6px;--offset-y:40px;--line:rgba(0, 0, 0, 0.1);--bakcground-value:#333143;--color-value:#fff;--pointer:rgb(128, 136, 255)}.chartp{padding-top:50px;padding-bottom:20px;overflow:hidden;position:relative;width:100%;height:100%;display:flex;flex-direction:row-reverse;box-sizing:border-box;gap:10px}.main_chart{flex:1;position:relative;height:calc(100% - 3em)}.chartp .svg_container{margin-top:-' + svg_offse_top + 'px;position:absolute;width:100%;height:calc(100% - var(--offset-x) + ' + svg_offse_height + 'px)}.svg_container>div>div{width: 100%;height: 100%;position: absolute;}.chartp svg{position:absolute;}.chart{padding-inline-end:var(--offset-y);width:100%;height:100%;background-image:linear-gradient(to top,var(--line) 2px,transparent 2px);background-size:100% calc(33.33333% - var(--offset-x)/ 3);border-top:4px solid transparent;background-position:left top;box-sizing:border-box;display:flex}.chart>div{position:relative;display:flex;width:100%;align-items:flex-end;justify-content:center;margin-top:var(--offset-x)}.chart>div>span{position:absolute;width:2px;display:block;bottom:0;pointer-events:none;padding-bottom:var(--offset-x)}.chart>div>span>span{z-index:1;position:absolute;left:50%;transform:translate(-50%,-100%);margin-top:-15px;text-align:center;content:attr(val);white-space:nowrap;padding:5px 7px;background-color:var(--bakcground-value);border-radius:5px;color:var(--color-value)}.chart>div>span>span::before{position:absolute;content:"";width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bakcground-value);left:50%;top:100%;transform:translate(-50%,-1px)}.chart>div>span::before{position:absolute;left:50%;transform:translate(-50%,-50%);padding-top:10px;content:"";border-radius:100%;padding:5px;background:var(--pointer)}.chart>div::before{position:absolute;left:50%;transform:translateX(-50%);top:100%;padding-top:10px;text-align:center;content:attr(data-title);display:none;height:1em;z-index:10}.chart>div::after{position:absolute;left:50%;transform:translateX(-50%);top:100%;width:.15em;height:6px;content:"";display:none;background:var(--line)}.chart:hover+div+.chart_dashitem,.chart:hover>div::after{display:none!important}.chart>div:hover::after,.chart>div:hover::before{display:block!important;}.chart_dashitem{position:relative;height:calc(100% - 2em);top:-.5em;padding-bottom:var(--offset-x);display:flex;flex-direction:column-reverse;text-align:end;justify-content:space-between;box-sizing:border-box}'
 
     // ==================================================  line 
+    function round(v) {
+        return Math.round(v * 10) / 10;
+    }
+
     function clamp(v, min, max) {
         return v < min ? min : v > max ? max : v;
     }
@@ -13,25 +17,19 @@
 
         const pts = list.map(p => [p[0], p[1] + yOffset]);
         const start = cp ? cp + " " : "";
+        const n = pts.length;
 
         // ------------------------------ straight line
-        if (!command) {
-            let d = "M " + start + pts[0][0] + "," + pts[0][1];
+        if (!command || n === 2) {
+            let d = "M " + start + round(pts[0][0]) + "," + round(pts[0][1]);
             for (let i = 1; i < pts.length; i++) {
-                d += " L " + pts[i][0] + " " + pts[i][1];
+                d += " L " + round(pts[i][0]) + " " + round(pts[i][1]);
             }
             return d;
         }
 
-        const smooth = clamp(Number(command) || 0.18, 0, 1);
-        const n = pts.length;
-
-        if (n === 2) {
-            return "M " + start + pts[0][0] + "," + pts[0][1] +
-                " L " + pts[1][0] + " " + pts[1][1];
-        }
-
         // ------------------------------ monotone tangents
+        const smooth = clamp(Number(command) || 0.18, 0, 1);
         const xs = new Array(n);
         const ys = new Array(n);
         const dx = new Array(n - 1);
@@ -83,16 +81,18 @@
         for (let i = 0; i < n - 1; i++) {
             const h = xs[i + 1] - xs[i] || 1;
 
-            const c1x = xs[i] + h / 3;
-            const c1y = ys[i] + (m[i] * h / 3);
+            const c1x = round(xs[i] + h / 3);
+            const c1y = round(ys[i] + (m[i] * h / 3));
 
-            const c2x = xs[i + 1] - h / 3;
-            const c2y = ys[i + 1] - (m[i + 1] * h / 3);
+            const c2x = round(xs[i + 1] - h / 3);
+            const c2y = round(ys[i + 1] - (m[i + 1] * h / 3));
+            const xsi = round(xs[i + 1]);
+            const ysi = round(ys[i + 1]);
 
             d += " C " +
-                c1x + " " + c1y + ", " +
-                c2x + " " + c2y + ", " +
-                xs[i + 1] + " " + ys[i + 1];
+                c1x + " " + c1y + "," +
+                c2x + " " + c2y + "," +
+                xsi + " " + ysi;
         }
 
         return d;
@@ -120,7 +120,7 @@
             var y = bound.height - (normalized * (bound.height - 5 - svg_offse_height)) - svg_offse_height + svg_offse_top;
             var x = i * offset - (offset / 2);
             list.push([x, y]);
-        } 
+        }
         list[0][0] = 0;
         list[list.length - 1][0] = bound.width
         // remove extra ends
@@ -198,23 +198,8 @@
                     , height, option.line.curve, 0)}')"`
                 : "";
 
-
-
             svg.insertAdjacentHTML("beforeend",
-                `<div>
-                    <div ${clipPath}></div>
-                    <svg width="100%" height="100%" preserveAspectRatio="none">
-                        <path 
-                        d="${svgPath(svg_points, "", height, option.line.curve)}"
-                        fill="none"
-                        style="${option.line.style || ""}"
-                        stroke-width="${wdith}"
-                        stroke="${option.line.color || "#78c9f3bf"}"
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        />
-                    </svg>
-                </div>`
+                `<div><div ${clipPath}></div><svg width="100%" height="100%" preserveAspectRatio="none"><path d="${svgPath(svg_points, "", height, option.line.curve)}" fill="none" style="${option.line.style || ""}" stroke-width="${wdith}" stroke="${option.line.color || "#78c9f3bf"}" stroke-linejoin="round" stroke-linecap="round"/></svg></div>`
             );
 
 
@@ -243,11 +228,11 @@
         // ================================================   width change event
         var firstcall = true;
         new ResizeObserver(function () {
-            if (firstcall) {
+            if (firstcall || !element.isConnected) {
                 firstcall = false
                 return
             }
-            refresh(false)
+            refresh(false) 
         }).observe(element.children[0]);
 
         function add(option) {
@@ -304,7 +289,8 @@
             chart_numbers = []
             refresh()
         }
-        function refresh(is = true) {
+        function refresh(is = true) { 
+            
             svg.innerHTML = ""
             if (is === true)
                 create_dialog_cahrt(main_chart, head)
